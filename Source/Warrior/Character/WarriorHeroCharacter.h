@@ -6,6 +6,8 @@
 #include "WarriorBaseCharacter.h"
 #include "WarriorHeroCharacter.generated.h"
 
+struct FInputActionValue;
+class UDataAsset_InputConfig;
 class UCameraComponent;
 class USpringArmComponent;
 
@@ -24,10 +26,25 @@ private:
 #pragma region Components
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
+	TObjectPtr<USpringArmComponent> CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FollowCamera;
+	TObjectPtr<UCameraComponent> FollowCamera;
+
+#pragma endregion
+
+
+#pragma region Inputs
+
+protected:
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "CharacterData", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UDataAsset_InputConfig> InputConfigDataAsset;
+
+	void Input_Move(const FInputActionValue& InputActionValue);
+	void Input_Look(const FInputActionValue& InputActionValue);
 
 #pragma endregion
 };

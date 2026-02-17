@@ -4,6 +4,7 @@
 #include "AnimInstance/WarriorCharacterAnimInstance.h"
 #include "Character/WarriorBaseCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "WarriorDebugHelper.h"
 
 void UWarriorCharacterAnimInstance::NativeInitializeAnimation()
 {

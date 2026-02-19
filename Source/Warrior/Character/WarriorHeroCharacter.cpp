@@ -13,6 +13,7 @@
 #include "AbilitySystem/WarriorAbilitySystemComponent.h"
 
 #include "DrawDebugHelpers.h"
+#include "DataAssets/StartUpData/DataAsset_StartUpDataBase.h"
 
 AWarriorHeroCharacter::AWarriorHeroCharacter()
 {
@@ -62,13 +63,24 @@ void AWarriorHeroCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 void AWarriorHeroCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	
-	const FString ASCText = FString::Printf(
-		TEXT("Owner Actor: %s, AvatarActor: %s"), *WarriorAbilitySystemComponent->GetOwnerActor()->GetActorLabel(),
-		*WarriorAbilitySystemComponent->GetAvatarActor()->GetActorLabel());
 
-	Debug::Print(TEXT("Ability system component valid. ") + ASCText, FColor::Green);
-	Debug::Print(TEXT("AttributeSet valid. ") + ASCText, FColor::Green);
+	// TSoftObjectPtr 사용 이유
+	// ─────────────────────────────────────────────────────────────
+	// Hard 포인터였다면 아래 체인이 레벨/블루프린트 로드 시 전부 메모리에 올라옴:
+	//   BP_HeroCharacter → DataAsset → Ability → Ability가 참조하는 것들...
+	//
+	// Soft 포인터로 선언하면 경로(문자열)만 저장, 체인이 끊김
+	// 실제 로드는 PossessedBy() 호출 시점(캐릭터 스폰 시)에만 수행
+	// → 인게임 최적화 (레벨 로드 시 불필요한 에셋 방지)
+	// → 에디터 최적화 (블루프린트 열 때 연쇄 로드 방지)
+	if (!CharacterStartUpData.IsNull())
+	{
+		// LoadSynchronous(): Soft → Hard 변환, 지금 당장 메모리에 올림
+		if (UDataAsset_StartUpDataBase* LoadedData = CharacterStartUpData.LoadSynchronous())
+		{
+			LoadedData->GiveToAbilitySystemComponent(WarriorAbilitySystemComponent);
+		}
+	}
 }
 
 void AWarriorHeroCharacter::BeginPlay()

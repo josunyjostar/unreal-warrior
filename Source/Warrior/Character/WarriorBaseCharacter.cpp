@@ -18,6 +18,8 @@ void AWarriorBaseCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	WarriorAbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+	ensureMsgf(!CharacterStartUpData.IsNull(), TEXT("Forgot to assign start up data to %s"), *GetName());
 }
 
 UAbilitySystemComponent* AWarriorBaseCharacter::GetAbilitySystemComponent() const

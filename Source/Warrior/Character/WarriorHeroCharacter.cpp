@@ -10,7 +10,7 @@
 #include "DataAssets/Input/DataAsset_InputConfig.h"
 #include "Input/WarriorInputComponent.h"
 #include "SharedGameplayTags.h"
-#include "AbilitySystem/WarriorAbilitySystemComponent.h"
+#include "Components/Combat/HeroCombatComponent.h"
 
 #include "DrawDebugHelpers.h"
 #include "DataAssets/StartUpData/DataAsset_StartUpDataBase.h"
@@ -122,4 +122,9 @@ void AWarriorHeroCharacter::Input_Look(const FInputActionValue& InputActionValue
 	{
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+UHeroCombatComponent* AWarriorHeroCharacter::GetHeroCombatComponent() const
+{
+	return HeroCombatComponent;
 }

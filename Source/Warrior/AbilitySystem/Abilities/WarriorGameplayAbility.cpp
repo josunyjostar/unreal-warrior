@@ -1,5 +1,5 @@
 #include "AbilitySystem/Abilities/WarriorGameplayAbility.h"
-
+#include "Components/Combat/PawnCombatComponent.h"
 #include "AbilitySystemComponent.h"
 
 void UWarriorGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo,
@@ -30,4 +30,10 @@ void UWarriorGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle
 			ActorInfo->AbilitySystemComponent->ClearAbility(Handle);
 		}
 	}
+}
+
+UPawnCombatComponent* UWarriorGameplayAbility::GetPawnCombatComponentFromActorInfo() const
+{	
+	// FindComponentByClass는 해당 클래스가 가진 컴포넌트 O(N)탐색이라 느리니까 tick 같은데서 사용하지 말것 
+	return GetAvatarActorFromActorInfo()->FindComponentByClass<UPawnCombatComponent>();
 }

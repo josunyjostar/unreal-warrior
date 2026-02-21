@@ -11,6 +11,7 @@
  * 
  */
 
+//  InputTag를 기반으로 입력을 바인딩하는 커스텀 InputComponent
 UCLASS()
 class WARRIOR_API UWarriorInputComponent : public UEnhancedInputComponent
 {

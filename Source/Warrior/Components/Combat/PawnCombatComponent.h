@@ -11,6 +11,7 @@
 struct FGameplayTag;
 class AWarriorWeaponBase;
 
+// 캐릭터가 소지한 무기들을 Tag로 관리하는 컴포넌트
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class WARRIOR_API UPawnCombatComponent : public UPawnExtensionComponentBase
 {

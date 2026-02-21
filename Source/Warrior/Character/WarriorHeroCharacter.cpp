@@ -17,8 +17,6 @@
 
 AWarriorHeroCharacter::AWarriorHeroCharacter()
 {
-	Debug::Print(TEXT("Working"));
-
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.f);
 
 	bUseControllerRotationPitch = false;

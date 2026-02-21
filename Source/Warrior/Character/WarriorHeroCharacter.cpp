@@ -13,6 +13,7 @@
 #include "Components/Combat/HeroCombatComponent.h"
 
 #include "DrawDebugHelpers.h"
+#include "AbilitySystem/WarriorAbilitySystemComponent.h"
 #include "DataAssets/StartUpData/DataAsset_StartUpDataBase.h"
 
 AWarriorHeroCharacter::AWarriorHeroCharacter()
@@ -58,6 +59,9 @@ void AWarriorHeroCharacter::SetupPlayerInputComponent(class UInputComponent* Pla
 	                                             ETriggerEvent::Triggered, this, &ThisClass::Input_Move);
 	WarriorInputComponent->BindNativeInputAction(InputConfigDataAsset, WarriorGameplayTags::InputTag_Look,
 	                                             ETriggerEvent::Triggered, this, &ThisClass::Input_Look);
+
+	WarriorInputComponent->BindAbilityInputAction(InputConfigDataAsset, this, &ThisClass::Input_AbilityInputPressed,
+	                                              &ThisClass::Input_AbilityInputReleased);
 }
 
 void AWarriorHeroCharacter::PossessedBy(AController* NewController)
@@ -122,6 +126,17 @@ void AWarriorHeroCharacter::Input_Look(const FInputActionValue& InputActionValue
 	{
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+
+void AWarriorHeroCharacter::Input_AbilityInputPressed(FGameplayTag InInputTag)
+{
+	WarriorAbilitySystemComponent->OnAbilityInputPressed(InInputTag);
+}
+
+void AWarriorHeroCharacter::Input_AbilityInputReleased(FGameplayTag InInputTag)
+{
+	WarriorAbilitySystemComponent->OnAbilityInputReleased(InInputTag);
 }
 
 UHeroCombatComponent* AWarriorHeroCharacter::GetHeroCombatComponent() const

@@ -1,0 +1,141 @@
+
+------------------------------------
+
+
+TSoftObjectPtr 사용법
+
+AnimInstance : 애니메이션 상태를 제어하는 클래스
+
+  - 스켈레탈 메쉬에 어떤 애니메이션을 재생할지 결정
+  - C++ / 블루프린트에서 게임 로직 데이터(속도, 가속 여부 등)를 받아서 Animation Blueprint에 전달
+  - Animation Blueprint의 AnimGraph가 이 데이터를 기반으로 블렌딩, 전환 등을 처리
+
+MovementRotation.RotateVector(FVector::RightVector)
+MovementRotation	   : 얼마나 회전시킬지 (회전량, 현재 월드  회전)
+FVector::RightVector : 회전당하는 대상 (벡터)
+= FVector::RightVector를 MovementRotation만큼 회전시켜라
+MovementRotation.RotateVector(FVector::RightVector) : 월드 기준 벡터를 로컬 캐릭터만큼 회전 시키는것
+
+
+------------------------------------
+
+리플렉션 시스템 
+
+*런타임에 클래스의 멤버 정보(이름, 타입, 메모리 오프셋)를 조회가능
+  런타임에 TFieldIterator로 순회하며 조회 가능
+
+
+------------------------------------
+UBlueprintFunctionLibrary를 사용하는 이유:
+
+  - UGameplayStatics를 상속하면 내부에 참조된 대량의 엔진 헤더가 함께 포함됨
+  - 가벼운 유틸리티 함수 몇 개를 위해 불필요한 의존성이 생기고 컴파일 시간이 늘어남
+  - UBlueprintFunctionLibrary는 최소한의 의존성만 가지므로, 필요한 헤더만 직접 include하여 경량으로 유지 가능                                                                                 
+  
+UBlueprintFunctionLibrary 핵심 주의사항
+
+1. 하드 레퍼런스 주의 (가장 중요) 
+  - 라이브러리 함수가 에셋을 직접 참조하면, 사용 시 참조된 모든 에셋이 메모리에 로드됨
+  - → TSoftObjectPtr (소프트 레퍼런스) 사용하고, 사이즈 맵으로 의존성 확인할 것                                                                                                               
+  
+2. 기능별로 분리
+  - 하나의 거대한 라이브러리에 몰아넣지 말 것
+  - 예: InventoryHelpers, CombatUtils, MathLibrary 등으로 분리
+
+
+------------------------------------
+
+■ Hard Reference 로드 시점
+                                                                                                                                                                                                "해당 에셋이 로드될 때, Hard 참조된 에셋도 자동으로 같이 로드된다"
+                                                                                                                                                                                              
+    - 레벨에 액터 배치되어 있으면   →  레벨 로드 시
+    - 블루프린트 에디터에서 열면    →  열 때
+    - 다른 에셋이 Hard 참조하면     →  그 에셋 로드될 때
+
+
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ■ Soft Reference (TSoftObjectPtr) 를 쓰는 이유
+
+
+    Hard 포인터 체인 예시:
+      BP_HeroCharacter → DataAsset → Ability → Ability가 참조하는 것들...
+      레벨 로드 시 위 체인이 전부 메모리에 올라옴
+
+    Soft 포인터로 끊으면:
+      BP_HeroCharacter → (경로만 저장) → DataAsset
+      필요한 시점(PossessedBy)에만 LoadSynchronous()로 로드
+
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ■ 결론
+
+    Soft 참조는 두 가지 모두에 해당:
+      1. 인게임 최적화    (레벨 로드 시 불필요한 에셋 방지)
+      2. 에디터 최적화    (블루프린트 열 때 연쇄 로드 방지)
+
+------------------------------------
+
+■ GAS 어빌리티 등록 흐름 
+
+[시작점]
+캐릭터 빙의 시 PossessedBy() 호출
+  → CharacterStartUpData(DataAsset) 로드
+  → GiveToAbilitySystemComponent(ASC) 호출
+
+[어빌리티 등록]
+DataAsset_StartUpDataBase (공통)
+  ├── ActivateOnGivenAbilities : 등록 즉시 자동 발동 (패시브 등)
+  └── ReactiveAbilities        : 이벤트 발생 시 반응
+
+DataAsset_HeroStartUpData (히어로 전용, override)
+  └── HeroStartUpAbilitySets   : InputTag + 어빌리티 쌍
+       → AbilitySpec 생성
+       → InputTag 부착 (GetDynamicSpecSourceTags)
+       → ASC.GiveAbility() 로 최종 등록
+
+[InputTag의 역할]
+DataAsset_InputConfig
+  ├── NativeInputActions  : InputTag ↔ InputAction (이동/카메라)
+  └── AbilityInputActions : InputTag ↔ InputAction (어빌리티 키)
+
+InputTag가 InputAction(키) 과 AbilitySpec(어빌리티) 를 연결하는 공통 키
+
+[현재 상태]
+✅ 어빌리티 ASC에 등록
+✅ InputTag가 어빌리티 스펙에 부착
+✅ InputTag가 InputAction에 연결
+❌ 키 입력 → 어빌리티 발동 (다음 강의)
+
+[다음 강의 예정]
+키 입력
+  → InputTag와 함께 콜백 호출
+  → HeroCharacter → ASC에 InputTag 전달
+  → ASC가 일치하는 InputTag 가진 어빌리티 검색
+  → 어빌리티 발동
+
+캐릭터 빙의될 때 data에셋에 등록된 내용들 ASC에 넘겨서 GamePlay Tag랑 매핑된 Ability를 부여한다 
+그 중에는 input action이랑 매핑된 어빌리티도 있음
+------------------------------------
+
+■ Anim Montage에서 notify 이벤트를 트리거해서 GA가 수신하게 하는법
+
+  1. 몽타주에서 AN_SendGamePlayEventToOwner 노티파이 발생                                                                                                                                     
+  2. 노티파이 BP가 SendGameplayEventToActor 호출                                                                                                                                              
+  3. 이벤트가 **플레이어(ASC 보유 액터)**로 전달                                                                                                                                              
+  4. GA의 WaitGameplayEvent가 태그 일치하면 수신                                                                                                                                              
+  5. 그 시점에 로직 실행 (무기 장착, 소켓 붙이기, 데미지, 이펙트 등) 
+
+
+------------------------------------
+
+BlueprintPure
+멀티스레드 평가 가능 (실행핀이 있으면 게임스레드 강제)
+
+------------------------------------
+■ GA 기반 LinkedAnimLayer 바인딩 과정 
+
+1. ABP_Hero의 AnimGraphNode_LinkedAnimLayer는                                                                                                                                               
+     ALI_Hero의 ArmedLocomotionState를 호출하겠다고 선언한 노드
+2. GA의 Link Anim Class Layers(InClass)는                                                                                                                                                   
+     해당 SkeletalMeshComponent에 대해 “ALI_Hero 레이어 구현은 InClass가 담당”이라고 등록
+3. 그러면 ABP_Hero의 LinkedAnimLayer 노드가 평가될 때,                                                                                                                                      
+     엔진이 등록된 링크 정보를 보고 InClass의 ArmedLocomotionState 구현으로 라우팅
